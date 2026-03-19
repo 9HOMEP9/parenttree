@@ -14,22 +14,20 @@
             margin: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b);
-            overflow: hidden; /* убираем скроллы */
+            overflow: hidden;
             height: 100vh;
-            height: 100dvh; /* используем динамическую высоту для мобильных */
+            height: 100dvh;
         }
 
-        /* Обёртка на весь экран */
         .fullscreen-wrapper {
             position: relative;
             width: 100vw;
             width: 100dvw;
             height: 100vh;
             height: 100dvh;
-            overflow: hidden; /* чтобы ничего не вылезало */
+            overflow: hidden;
         }
 
-        /* Canvas для листьев — всегда на весь wrapper */
         #leaf-canvas {
             position: absolute;
             top: 0;
@@ -41,14 +39,13 @@
             display: block;
         }
 
-        /* Контейнер со схемой — масштабируется и центрируется */
         .content {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(1); /* масштаб будет меняться через JS */
-            width: 900px;    /* базовая ширина схемы */
-            height: 620px;   /* базовая высота схемы */
+            transform: translate(-50%, -50%) scale(1);
+            width: 900px;
+            height: 620px;
             transform-origin: center center;
             z-index: 2;
         }
@@ -71,7 +68,6 @@
             stroke-dasharray: 6,6;
         }
 
-        /* Карточки */
         .card {
             position: absolute;
             width: 140px;
@@ -117,7 +113,6 @@
             opacity: 1;
         }
 
-        /* Легенда */
         .legend {
             position: absolute;
             top: 20px;
@@ -135,7 +130,7 @@
             color: #e8edf5;
             backdrop-filter: blur(3px);
             font-weight: 500;
-            pointer-events: none; /* легенда не мешает тапам */
+            pointer-events: none;
         }
 
         .legend-item {
@@ -207,7 +202,7 @@
     </div>
 
     <script>
-        // ========== Масштабирование контента под размер экрана ==========
+        // Масштабирование контента
         const content = document.getElementById('content');
         const wrapper = document.querySelector('.fullscreen-wrapper');
 
@@ -217,16 +212,15 @@
             const baseWidth = 900;
             const baseHeight = 620;
 
-            // Масштаб, чтобы схема поместилась по ширине и высоте (contain)
-            const scale = Math.min(wrapperWidth / baseWidth, wrapperHeight / baseHeight, 1); // максимум 1, чтобы не увеличивать больше оригинала
+            const scale = Math.min(wrapperWidth / baseWidth, wrapperHeight / baseHeight, 1);
             content.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
 
         window.addEventListener('resize', scaleContent);
-        scaleContent(); // при загрузке
+        scaleContent();
 
-        // ========== Универсальная функция для получения координат ==========
-        function getPointerPosition(e, referenceRect) {
+        // Универсальная функция получения координат относительно указанного элемента
+        function getPointerPosition(e, relativeToElement) {
             let clientX, clientY;
             if (e.touches) {
                 clientX = e.touches[0].clientX;
@@ -235,19 +229,30 @@
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
+            const rect = relativeToElement.getBoundingClientRect();
             return {
-                x: clientX - referenceRect.left,
-                y: clientY - referenceRect.top
+                x: clientX - rect.left,
+                y: clientY - rect.top
             };
         }
 
-        // ========== Наклон карточек (без изменений, работает с реальными координатами) ==========
+        // Наклон карточек (исправлено: передаём карточку как relativeToElement, но нам нужны координаты относительно карточки,
+        // поэтому проще получить координаты мыши и вычесть rect карточки)
         document.querySelectorAll('.card').forEach(card => {
             function updateTransform(e) {
                 const rect = card.getBoundingClientRect();
-                const pos = getPointerPosition(e, document.body); // координаты относительно body (они же client)
-                const x = pos.x - rect.left;
-                const y = pos.y - rect.top;
+                // Получаем координаты мыши в окне
+                let clientX, clientY;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                // Координаты внутри карточки
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
 
                 const rotateX = -(y - rect.height / 2) / 5;
                 const rotateY = (x - rect.width / 2) / 5;
@@ -276,7 +281,7 @@
             card.addEventListener('touchcancel', resetTransform);
         });
 
-        // ========== Листики внутри wrapper (на весь экран) ==========
+        // Листики (без изменений, там уже всё корректно)
         (function() {
             const canvas = document.getElementById('leaf-canvas');
             const ctx = canvas.getContext('2d');
@@ -295,13 +300,20 @@
             const MAX_SPEED_X = 1.5;
 
             let leaves = [];
-            let pointerX = -1000, pointerY = -1000; // координаты внутри wrapper
+            let pointerX = -1000, pointerY = -1000;
 
             function updatePointer(e) {
                 const wrapperRect = wrapper.getBoundingClientRect();
-                const pos = getPointerPosition(e, wrapperRect);
-                pointerX = pos.x;
-                pointerY = pos.y;
+                let clientX, clientY;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                pointerX = clientX - wrapperRect.left;
+                pointerY = clientY - wrapperRect.top;
             }
 
             function resetPointer() {
