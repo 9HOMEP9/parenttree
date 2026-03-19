@@ -1,173 +1,334 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Родословная микро-твитчеров</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Родословная микро-твитчеров — листопад на весь экран</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
 
-.wrapper {
-    position: relative;
-    width: 900px;
-    height: 620px;
-}
+        /* Canvas на весь экран */
+        #leaf-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            display: block;
+        }
 
+        .wrapper {
+            position: relative;
+            width: 900px;
+            height: 620px;
+            z-index: 2;
+            border-radius: 24px;
+        }
 
-.card {
-    position: absolute;
-    width: 140px;
-    height: 70px;
-    background: linear-gradient(145deg, #1e293b, #334155);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transform-style: preserve-3d;
-    transition: transform 0.12s ease, box-shadow 0.12s;
-}
+        svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
 
+        path {
+            stroke: #9ca3af;
+            stroke-width: 2;
+            fill: none;
+        }
 
-.card:hover {
-    box-shadow: 0 35px 80px rgba(0,0,0,0.8);
-}
+        .dashed {
+            stroke-dasharray: 6,6;
+        }
 
-.card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.3), transparent 60%);
-    opacity: 0;
-}
+        /* Карточки */
+        .card {
+            position: absolute;
+            width: 140px;
+            height: 70px;
+            background: linear-gradient(145deg, #263445, #1a2532);
+            border-radius: 16px;
+            border: 1px solid #4a5a6e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f0f6ff;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 0.2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, border-color 0.2s;
+            box-shadow: 0 10px 18px -8px rgba(0, 0, 0, 0.8), inset 0 -1px 1px rgba(255,255,255,0.05);
+            backdrop-filter: blur(2px);
+            z-index: 3;
+        }
 
-.card:hover::after {
-    opacity: 1;
-}
+        .card:hover {
+            border-color: #7f8fa3;
+            box-shadow: 0 22px 30px -12px black, inset 0 1px 2px rgba(255,255,255,0.1);
+            transform: translateY(-4px) scale(1.02);
+        }
 
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            background: radial-gradient(circle at var(--x) var(--y), rgba(255, 255, 255, 0.3), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+        }
 
-svg {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
+        .card:hover::after {
+            opacity: 1;
+        }
 
-path {
-    stroke: #9ca3af;
-    stroke-width: 2;
-    fill: none;
-}
+        /* Легенда */
+        .legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, #1f2a38, #141f2b);
+            border-radius: 16px;
+            padding: 12px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
+            border: 1px solid #4a5a6e;
+            z-index: 4;
+            font-size: 14px;
+            color: #e8edf5;
+            backdrop-filter: blur(3px);
+            font-weight: 500;
+        }
 
-.dashed {
-    stroke-dasharray: 6,6;
-}
-</style>
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .line {
+            width: 34px;
+            height: 0;
+            border-bottom: 2.5px solid #b0c0d0;
+        }
+
+        .line.dashed {
+            border-bottom-style: dashed;
+        }
+
+        .line.solid {
+            border-bottom-style: solid;
+        }
+    </style>
 </head>
-
 <body>
+    <canvas id="leaf-canvas"></canvas>
 
-<div class="wrapper">
+    <div class="wrapper">
+        <svg>
+            <path d="M450 90 V130" />
+            <path d="M450 130 H650" />
+            <path d="M450 130 V150" />
+            <path d="M650 130 V150" />
+            <path d="M450 130 H250 V150" class="dashed"/>
+            <path d="M650 220 V240 H450" />
+            <path d="M450 240 H350 V260" />
+            <path d="M450 240 H550 V260" />
+            <path d="M550 330 V350" />
+            <path d="M250 350 H650" />
+            <path d="M250 350 V370" />
+            <path d="M450 350 V370" />
+            <path d="M650 350 V370" />
+            <path d="M250 440 V470 H450 V440" />
+            <path d="M350 470 V500" />
+        </svg>
 
-<svg>
+        <div class="card" style="top:20px; left:380px;">Oxyfoxys</div>
+        <div class="card" style="top:150px; left:180px;">Shangrion</div>
+        <div class="card" style="top:150px; left:380px;">Ephiell</div>
+        <div class="card" style="top:150px; left:580px;">AELORIA31</div>
+        <div class="card" style="top:260px; left:300px;">Salted89</div>
+        <div class="card" style="top:260px; left:500px;">HOMEP9</div>
+        <div class="card" style="top:370px; left:180px;">GTX 970</div>
+        <div class="card" style="top:370px; left:380px;">AllSanyak</div>
+        <div class="card" style="top:370px; left:580px;">MsHlosha</div>
+        <div class="card" style="top:500px; left:300px;">zak0v</div>
 
+        <div class="legend">
+            <div class="legend-item">
+                <div class="line dashed"></div>
+                <span>приёмные / иное</span>
+            </div>
+            <div class="legend-item">
+                <div class="line solid"></div>
+                <span>родные</span>
+            </div>
+        </div>
+    </div>
 
-<path d="M450 90 V130" />
+    <script>
+        // Наклон карточек
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
 
+                const rotateX = -(y - rect.height / 2) / 5;
+                const rotateY = (x - rect.width / 2) / 5;
 
-<path d="M450 130 H650" />
+                card.style.transform = `
+                    perspective(1000px)
+                    rotateX(${rotateX}deg)
+                    rotateY(${rotateY}deg)
+                    translateY(-8px)
+                    scale(1.03)
+                `;
 
+                card.style.setProperty('--x', `${x}px`);
+                card.style.setProperty('--y', `${y}px`);
+            });
 
-<path d="M450 130 V150" />
-<path d="M650 130 V150" />
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0) scale(1)';
+            });
+        });
 
+        // Листики на весь экран, притяжение по горизонтали
+        (function() {
+            const canvas = document.getElementById('leaf-canvas');
+            const ctx = canvas.getContext('2d');
 
-<path d="M450 130 H250 V150" class="dashed"/>
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
 
+            const LEAF_COUNT = 70;
+            // РАДИУС УМЕНЬШЕН В 2 РАЗА (было 150, стало 75)
+            const ATTRACTION_RADIUS = 75;
+            const ATTRACTION_FORCE = 0.03;
+            const MAX_SPEED_X = 1.5;
 
-<path d="M650 220 V240 H450" />
+            let leaves = [];
+            let mouseX = -1000, mouseY = -1000;
 
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
 
-<path d="M450 240 H350 V260" />
-<path d="M450 240 H550 V260" />
+            window.addEventListener('mouseleave', () => {
+                mouseX = -1000;
+                mouseY = -1000;
+            });
 
+            function createLeaf(resetPosition = true) {
+                return {
+                    x: resetPosition ? Math.random() * canvas.width : Math.random() * canvas.width,
+                    y: resetPosition ? Math.random() * canvas.height : -10 - Math.random() * 30,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: 0.4 + Math.random() * 0.8,
+                    size: 6 + Math.random() * 10,
+                    angle: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.02,
+                    color: `hsl(${30 + Math.random() * 40}, 75%, 60%)`
+                };
+            }
 
-<path d="M550 330 V350" />
+            for (let i = 0; i < LEAF_COUNT; i++) {
+                leaves.push(createLeaf(true));
+            }
 
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-<path d="M250 350 H650" />
+                leaves.forEach(leaf => {
+                    leaf.y += leaf.vy;
+                    leaf.vx *= 0.99;
 
+                    if (mouseX >= 0 && mouseX <= canvas.width && mouseY >= 0 && mouseY <= canvas.height) {
+                        const dx = mouseX - leaf.x;
+                        const dy = mouseY - leaf.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < ATTRACTION_RADIUS) {
+                            const force = (1 - dist / ATTRACTION_RADIUS) * ATTRACTION_FORCE;
+                            leaf.vx += dx * force;
+                        }
+                    }
 
-<path d="M250 350 V370" />
-<path d="M450 350 V370" />
-<path d="M650 350 V370" />
+                    if (Math.abs(leaf.vx) > MAX_SPEED_X) {
+                        leaf.vx = Math.sign(leaf.vx) * MAX_SPEED_X;
+                    }
 
+                    leaf.x += leaf.vx;
+                    leaf.angle += leaf.rotSpeed;
 
-<path d="M250 440 V470 H450 V440" />
+                    if (leaf.y > canvas.height + 30 || leaf.x < -40 || leaf.x > canvas.width + 40) {
+                        leaf.x = Math.random() * canvas.width;
+                        leaf.y = -20 - Math.random() * 30;
+                        leaf.vx = (Math.random() - 0.5) * 0.4;
+                        leaf.vy = 0.4 + Math.random() * 0.8;
+                        leaf.size = 6 + Math.random() * 10;
+                        leaf.color = `hsl(${30 + Math.random() * 40}, 75%, 60%)`;
+                        leaf.angle = Math.random() * Math.PI * 2;
+                        leaf.rotSpeed = (Math.random() - 0.5) * 0.02;
+                    }
+                });
 
+                leaves.forEach(leaf => {
+                    ctx.save();
+                    ctx.translate(leaf.x, leaf.y);
+                    ctx.rotate(leaf.angle);
+                    ctx.fillStyle = leaf.color;
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetY = 3;
 
-<path d="M350 470 V500" />
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, leaf.size * 0.6, leaf.size * 0.4, 0, 0, Math.PI * 2);
+                    ctx.fill();
 
-</svg>
+                    ctx.fillStyle = '#8B5A2B';
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.ellipse(-leaf.size * 0.3, -leaf.size * 0.1, leaf.size * 0.2, leaf.size * 0.1, 0.2, 0, Math.PI * 2);
+                    ctx.fill();
 
+                    ctx.restore();
+                });
 
-<div class="card" style="top:20px; left:380px;">Oxyfoxys</div>
+                requestAnimationFrame(animate);
+            }
 
-<div class="card" style="top:150px; left:180px;">Shangrion</div>
-<div class="card" style="top:150px; left:380px;">Ephiell</div>
-<div class="card" style="top:150px; left:580px;">AELORIA31</div>
-
-<div class="card" style="top:260px; left:300px;">Salted89</div>
-<div class="card" style="top:260px; left:500px;">HOMEP9</div>
-
-<div class="card" style="top:370px; left:180px;">GTX 970</div>
-<div class="card" style="top:370px; left:380px;">AllSanyak</div>
-<div class="card" style="top:370px; left:580px;">MsHlosha</div>
-
-<div class="card" style="top:500px; left:300px;">zak0v</div>
-
-</div>
-
-<script>
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('mousemove', e => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // ЕЩЁ сильнее наклон
-        const rotateX = -(y - rect.height / 2) / 4;
-        const rotateY = (x - rect.width / 2) / 4;
-
-        card.style.transform = `
-            perspective(1000px)
-            rotateX(${rotateX}deg)
-            rotateY(${rotateY}deg)
-            translateY(-18px)
-            scale(1.1)
-        `;
-
-        card.style.setProperty('--x', `${x}px`);
-        card.style.setProperty('--y', `${y}px`);
-    });
-
-    card.addEventListener('mouseleave', () => {
-        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-    });
-});
-</script>
-
+            animate();
+        })();
+    </script>
 </body>
 </html>
