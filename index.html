@@ -14,15 +14,24 @@
             margin: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b);
-            min-height: 100vh;
-            overflow-x: auto;        /* разрешаем горизонтальный скролл */
-            overflow-y: auto;
-            display: block;          /* убираем flex-центрирование */
+            overflow: hidden; /* убираем скроллы */
+            height: 100vh;
+            height: 100dvh; /* используем динамическую высоту для мобильных */
         }
 
-        /* Canvas на весь экран остаётся фиксированным */
+        /* Обёртка на весь экран */
+        .fullscreen-wrapper {
+            position: relative;
+            width: 100vw;
+            width: 100dvw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden; /* чтобы ничего не вылезало */
+        }
+
+        /* Canvas для листьев — всегда на весь wrapper */
         #leaf-canvas {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
@@ -32,14 +41,16 @@
             display: block;
         }
 
-        .wrapper {
-            position: relative;
-            width: 900px;            /* фиксированная ширина как было */
-            margin: 0 auto;           /* центрирование на больших экранах */
-            height: 620px;
+        /* Контейнер со схемой — масштабируется и центрируется */
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1); /* масштаб будет меняться через JS */
+            width: 900px;    /* базовая ширина схемы */
+            height: 620px;   /* базовая высота схемы */
+            transform-origin: center center;
             z-index: 2;
-            border-radius: 24px;
-            /* если экран уже, чем 900px, появится горизонтальный скролл у body */
         }
 
         svg {
@@ -124,7 +135,7 @@
             color: #e8edf5;
             backdrop-filter: blur(3px);
             font-weight: 500;
-            pointer-events: none;
+            pointer-events: none; /* легенда не мешает тапам */
         }
 
         .legend-item {
@@ -149,53 +160,73 @@
     </style>
 </head>
 <body>
-    <canvas id="leaf-canvas"></canvas>
+    <div class="fullscreen-wrapper">
+        <canvas id="leaf-canvas"></canvas>
 
-    <div class="wrapper">
-        <svg>
-            <path d="M450 90 V130" />
-            <path d="M450 130 H650" />
-            <path d="M450 130 V150" />
-            <path d="M650 130 V150" />
-            <path d="M450 130 H250 V150" class="dashed"/>
-            <path d="M650 220 V240 H450" />
-            <path d="M450 240 H350 V260" />
-            <path d="M450 240 H550 V260" />
-            <path d="M550 330 V350" />
-            <path d="M250 350 H650" />
-            <path d="M250 350 V370" />
-            <path d="M450 350 V370" />
-            <path d="M650 350 V370" />
-            <path d="M250 440 V470 H450 V440" />
-            <path d="M350 470 V500" />
-        </svg>
+        <div class="content" id="content">
+            <svg>
+                <path d="M450 90 V130" />
+                <path d="M450 130 H650" />
+                <path d="M450 130 V150" />
+                <path d="M650 130 V150" />
+                <path d="M450 130 H250 V150" class="dashed"/>
+                <path d="M650 220 V240 H450" />
+                <path d="M450 240 H350 V260" />
+                <path d="M450 240 H550 V260" />
+                <path d="M550 330 V350" />
+                <path d="M250 350 H650" />
+                <path d="M250 350 V370" />
+                <path d="M450 350 V370" />
+                <path d="M650 350 V370" />
+                <path d="M250 440 V470 H450 V440" />
+                <path d="M350 470 V500" />
+            </svg>
 
-        <div class="card" style="top:20px; left:380px;">Oxyfoxys</div>
-        <div class="card" style="top:150px; left:180px;">Shangrion</div>
-        <div class="card" style="top:150px; left:380px;">Ephiell</div>
-        <div class="card" style="top:150px; left:580px;">AELORIA31</div>
-        <div class="card" style="top:260px; left:300px;">Salted89</div>
-        <div class="card" style="top:260px; left:500px;">HOMEP9</div>
-        <div class="card" style="top:370px; left:180px;">GTX 970</div>
-        <div class="card" style="top:370px; left:380px;">AllSanyak</div>
-        <div class="card" style="top:370px; left:580px;">MsHlosha</div>
-        <div class="card" style="top:500px; left:300px;">zak0v</div>
+            <div class="card" style="top:20px; left:380px;">Oxyfoxys</div>
+            <div class="card" style="top:150px; left:180px;">Shangrion</div>
+            <div class="card" style="top:150px; left:380px;">Ephiell</div>
+            <div class="card" style="top:150px; left:580px;">AELORIA31</div>
+            <div class="card" style="top:260px; left:300px;">Salted89</div>
+            <div class="card" style="top:260px; left:500px;">HOMEP9</div>
+            <div class="card" style="top:370px; left:180px;">GTX 970</div>
+            <div class="card" style="top:370px; left:380px;">AllSanyak</div>
+            <div class="card" style="top:370px; left:580px;">MsHlosha</div>
+            <div class="card" style="top:500px; left:300px;">zak0v</div>
 
-        <div class="legend">
-            <div class="legend-item">
-                <div class="line dashed"></div>
-                <span>приёмные / иное</span>
-            </div>
-            <div class="legend-item">
-                <div class="line solid"></div>
-                <span>родные</span>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="line dashed"></div>
+                    <span>приёмные / иное</span>
+                </div>
+                <div class="legend-item">
+                    <div class="line solid"></div>
+                    <span>родные</span>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Универсальная функция для получения координат касания/мыши
-        function getPointerPosition(e) {
+        // ========== Масштабирование контента под размер экрана ==========
+        const content = document.getElementById('content');
+        const wrapper = document.querySelector('.fullscreen-wrapper');
+
+        function scaleContent() {
+            const wrapperWidth = wrapper.clientWidth;
+            const wrapperHeight = wrapper.clientHeight;
+            const baseWidth = 900;
+            const baseHeight = 620;
+
+            // Масштаб, чтобы схема поместилась по ширине и высоте (contain)
+            const scale = Math.min(wrapperWidth / baseWidth, wrapperHeight / baseHeight, 1); // максимум 1, чтобы не увеличивать больше оригинала
+            content.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+
+        window.addEventListener('resize', scaleContent);
+        scaleContent(); // при загрузке
+
+        // ========== Универсальная функция для получения координат ==========
+        function getPointerPosition(e, referenceRect) {
             let clientX, clientY;
             if (e.touches) {
                 clientX = e.touches[0].clientX;
@@ -204,14 +235,17 @@
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
-            return { x: clientX, y: clientY };
+            return {
+                x: clientX - referenceRect.left,
+                y: clientY - referenceRect.top
+            };
         }
 
-        // Наклон карточек с поддержкой тач
+        // ========== Наклон карточек (без изменений, работает с реальными координатами) ==========
         document.querySelectorAll('.card').forEach(card => {
             function updateTransform(e) {
                 const rect = card.getBoundingClientRect();
-                const pos = getPointerPosition(e);
+                const pos = getPointerPosition(e, document.body); // координаты относительно body (они же client)
                 const x = pos.x - rect.left;
                 const y = pos.y - rect.top;
 
@@ -234,45 +268,38 @@
                 card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0) scale(1)';
             }
 
-            // Мышь
             card.addEventListener('mousemove', updateTransform);
             card.addEventListener('mouseleave', resetTransform);
-
-            // Тач
-            card.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                updateTransform(e);
-            });
-            card.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                updateTransform(e);
-            });
+            card.addEventListener('touchstart', (e) => { e.preventDefault(); updateTransform(e); });
+            card.addEventListener('touchmove', (e) => { e.preventDefault(); updateTransform(e); });
             card.addEventListener('touchend', resetTransform);
             card.addEventListener('touchcancel', resetTransform);
         });
 
-        // Листики на весь экран, притяжение по горизонтали с поддержкой тач
+        // ========== Листики внутри wrapper (на весь экран) ==========
         (function() {
             const canvas = document.getElementById('leaf-canvas');
             const ctx = canvas.getContext('2d');
 
             function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                const rect = wrapper.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
             }
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
 
-            const LEAF_COUNT = 50;
+            const LEAF_COUNT = 40;
             const ATTRACTION_RADIUS = 75;
             const ATTRACTION_FORCE = 0.03;
             const MAX_SPEED_X = 1.5;
 
             let leaves = [];
-            let pointerX = -1000, pointerY = -1000;
+            let pointerX = -1000, pointerY = -1000; // координаты внутри wrapper
 
             function updatePointer(e) {
-                const pos = getPointerPosition(e);
+                const wrapperRect = wrapper.getBoundingClientRect();
+                const pos = getPointerPosition(e, wrapperRect);
                 pointerX = pos.x;
                 pointerY = pos.y;
             }
@@ -282,13 +309,12 @@
                 pointerY = -1000;
             }
 
-            window.addEventListener('mousemove', updatePointer);
-            window.addEventListener('mouseleave', resetPointer);
-
-            window.addEventListener('touchstart', updatePointer);
-            window.addEventListener('touchmove', updatePointer);
-            window.addEventListener('touchend', resetPointer);
-            window.addEventListener('touchcancel', resetPointer);
+            wrapper.addEventListener('mousemove', updatePointer);
+            wrapper.addEventListener('mouseleave', resetPointer);
+            wrapper.addEventListener('touchstart', updatePointer);
+            wrapper.addEventListener('touchmove', updatePointer);
+            wrapper.addEventListener('touchend', resetPointer);
+            wrapper.addEventListener('touchcancel', resetPointer);
 
             function createLeaf(resetPosition = true) {
                 return {
