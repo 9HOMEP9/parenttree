@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Родословная микро-твитчеров</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.wrapper {
+    position: relative;
+    width: 900px;
+    height: 620px;
+}
+
+
+.card {
+    position: absolute;
+    width: 140px;
+    height: 70px;
+    background: linear-gradient(145deg, #1e293b, #334155);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.12s ease, box-shadow 0.12s;
+}
+
+
+.card:hover {
+    box-shadow: 0 35px 80px rgba(0,0,0,0.8);
+}
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.3), transparent 60%);
+    opacity: 0;
+}
+
+.card:hover::after {
+    opacity: 1;
+}
+
+
+svg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+path {
+    stroke: #9ca3af;
+    stroke-width: 2;
+    fill: none;
+}
+
+.dashed {
+    stroke-dasharray: 6,6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<svg>
+
+
+<path d="M450 90 V130" />
+
+
+<path d="M450 130 H650" />
+
+
+<path d="M450 130 V150" />
+<path d="M650 130 V150" />
+
+
+<path d="M450 130 H250 V150" class="dashed"/>
+
+
+<path d="M650 220 V240 H450" />
+
+
+<path d="M450 240 H350 V260" />
+<path d="M450 240 H550 V260" />
+
+
+<path d="M550 330 V350" />
+
+
+<path d="M250 350 H650" />
+
+
+<path d="M250 350 V370" />
+<path d="M450 350 V370" />
+<path d="M650 350 V370" />
+
+
+<path d="M250 440 V470 H450 V440" />
+
+
+<path d="M350 470 V500" />
+
+</svg>
+
+
+<div class="card" style="top:20px; left:380px;">Oxyfoxys</div>
+
+<div class="card" style="top:150px; left:180px;">Shangrion</div>
+<div class="card" style="top:150px; left:380px;">Ephiell</div>
+<div class="card" style="top:150px; left:580px;">AELORIA31</div>
+
+<div class="card" style="top:260px; left:300px;">Salted89</div>
+<div class="card" style="top:260px; left:500px;">HOMEP9</div>
+
+<div class="card" style="top:370px; left:180px;">GTX 970</div>
+<div class="card" style="top:370px; left:380px;">AllSanyak</div>
+<div class="card" style="top:370px; left:580px;">MsHlosha</div>
+
+<div class="card" style="top:500px; left:300px;">zak0v</div>
+
+</div>
+
+<script>
+document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // ЕЩЁ сильнее наклон
+        const rotateX = -(y - rect.height / 2) / 4;
+        const rotateY = (x - rect.width / 2) / 4;
+
+        card.style.transform = `
+            perspective(1000px)
+            rotateX(${rotateX}deg)
+            rotateY(${rotateY}deg)
+            translateY(-18px)
+            scale(1.1)
+        `;
+
+        card.style.setProperty('--x', `${x}px`);
+        card.style.setProperty('--y', `${y}px`);
+    });
+
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+    });
+});
+</script>
+
+</body>
+</html>
