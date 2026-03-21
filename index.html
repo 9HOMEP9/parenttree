@@ -90,12 +90,12 @@
             backdrop-filter: blur(2px);
             z-index: 3;
             touch-action: manipulation;
+            will-change: transform;
         }
 
         .card:hover {
             border-color: #7f8fa3;
             box-shadow: 0 22px 30px -12px black, inset 0 1px 2px rgba(255,255,255,0.1);
-            transform: translateY(-4px) scale(1.02);
         }
 
         .card::after {
@@ -202,87 +202,86 @@
     </div>
 
     <script>
-        // Масштабирование контента
-        const content = document.getElementById('content');
-        const wrapper = document.querySelector('.fullscreen-wrapper');
-
-        function scaleContent() {
-            const wrapperWidth = wrapper.clientWidth;
-            const wrapperHeight = wrapper.clientHeight;
-            const baseWidth = 900;
-            const baseHeight = 620;
-
-            const scale = Math.min(wrapperWidth / baseWidth, wrapperHeight / baseHeight, 1);
-            content.style.transform = `translate(-50%, -50%) scale(${scale})`;
-        }
-
-        window.addEventListener('resize', scaleContent);
-        scaleContent();
-
-        // Универсальная функция получения координат относительно указанного элемента
-        function getPointerPosition(e, relativeToElement) {
-            let clientX, clientY;
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-            const rect = relativeToElement.getBoundingClientRect();
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
-        }
-
-        // Наклон карточек (исправлено: передаём карточку как relativeToElement, но нам нужны координаты относительно карточки,
-        // поэтому проще получить координаты мыши и вычесть rect карточки)
-        document.querySelectorAll('.card').forEach(card => {
-            function updateTransform(e) {
-                const rect = card.getBoundingClientRect();
-                // Получаем координаты мыши в окне
-                let clientX, clientY;
-                if (e.touches) {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                } else {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
-                }
-                // Координаты внутри карточки
-                const x = clientX - rect.left;
-                const y = clientY - rect.top;
-
-                const rotateX = -(y - rect.height / 2) / 5;
-                const rotateY = (x - rect.width / 2) / 5;
-
-                card.style.transform = `
-                    perspective(1000px)
-                    rotateX(${rotateX}deg)
-                    rotateY(${rotateY}deg)
-                    translateY(-8px)
-                    scale(1.03)
-                `;
-
-                card.style.setProperty('--x', `${x}px`);
-                card.style.setProperty('--y', `${y}px`);
-            }
-
-            function resetTransform() {
-                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0) scale(1)';
-            }
-
-            card.addEventListener('mousemove', updateTransform);
-            card.addEventListener('mouseleave', resetTransform);
-            card.addEventListener('touchstart', (e) => { e.preventDefault(); updateTransform(e); });
-            card.addEventListener('touchmove', (e) => { e.preventDefault(); updateTransform(e); });
-            card.addEventListener('touchend', resetTransform);
-            card.addEventListener('touchcancel', resetTransform);
-        });
-
-        // Листики (без изменений, там уже всё корректно)
         (function() {
+            const content = document.getElementById('content');
+            const wrapper = document.querySelector('.fullscreen-wrapper');
+
+            function scaleContent() {
+                const wrapperWidth = wrapper.clientWidth;
+                const wrapperHeight = wrapper.clientHeight;
+                const baseWidth = 900;
+                const baseHeight = 620;
+
+                const scale = Math.min(wrapperWidth / baseWidth, wrapperHeight / baseHeight, 1);
+                content.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            }
+
+            window.addEventListener('resize', scaleContent);
+            scaleContent();
+
+
+            document.querySelectorAll('.card').forEach(card => {
+                let rafId = null;
+                let lastClientX = 0, lastClientY = 0;
+
+                function applyTransform() {
+                    rafId = null;
+                    const rect = card.getBoundingClientRect();
+                    const x = lastClientX - rect.left;
+                    const y = lastClientY - rect.top;
+
+                    const rotateX = -(y - rect.height / 2) / 5;
+                    const rotateY = (x - rect.width / 2) / 5;
+                    
+                    card.style.transform = `
+                        perspective(1000px)
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        translateY(-8px)
+                        scale(1.03)
+                    `;
+                    card.style.setProperty('--x', `${x}px`);
+                    card.style.setProperty('--y', `${y}px`);
+                }
+
+                function scheduleUpdate(clientX, clientY) {
+                    lastClientX = clientX;
+                    lastClientY = clientY;
+                    if (rafId === null) {
+                        rafId = requestAnimationFrame(applyTransform);
+                    }
+                }
+
+                function resetCard() {
+                    if (rafId !== null) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0) scale(1)';
+                    card.style.setProperty('--x', `0px`);
+                    card.style.setProperty('--y', `0px`);
+                }
+
+                function onPointerMove(e) {
+                    let clientX, clientY;
+                    if (e.touches) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    scheduleUpdate(clientX, clientY);
+                }
+
+                card.addEventListener('mousemove', onPointerMove);
+                card.addEventListener('mouseleave', resetCard);
+                card.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerMove(e); });
+                card.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); });
+                card.addEventListener('touchend', resetCard);
+                card.addEventListener('touchcancel', resetCard);
+            });
+
             const canvas = document.getElementById('leaf-canvas');
             const ctx = canvas.getContext('2d');
 
@@ -301,6 +300,7 @@
 
             let leaves = [];
             let pointerX = -1000, pointerY = -1000;
+
 
             function updatePointer(e) {
                 const wrapperRect = wrapper.getBoundingClientRect();
@@ -345,8 +345,7 @@
                 leaves.push(createLeaf(true));
             }
 
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            function updateAndDraw() {
 
                 leaves.forEach(leaf => {
                     leaf.y += leaf.vy;
@@ -355,7 +354,7 @@
                     if (pointerX >= 0 && pointerX <= canvas.width && pointerY >= 0 && pointerY <= canvas.height) {
                         const dx = pointerX - leaf.x;
                         const dy = pointerY - leaf.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
                         if (dist < ATTRACTION_RADIUS) {
                             const force = (1 - dist / ATTRACTION_RADIUS) * ATTRACTION_FORCE;
                             leaf.vx += dx * force;
@@ -381,6 +380,7 @@
                     }
                 });
 
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 leaves.forEach(leaf => {
                     ctx.save();
                     ctx.translate(leaf.x, leaf.y);
@@ -402,11 +402,28 @@
 
                     ctx.restore();
                 });
-
-                requestAnimationFrame(animate);
             }
 
-            animate();
+            let lastFrameTimestamp = 0;
+            const frameIntervalMs = 1000 / 60;
+
+            function animationLoop(now) {
+                requestAnimationFrame(animationLoop);
+                
+                if (!lastFrameTimestamp) {
+                    lastFrameTimestamp = now;
+                    updateAndDraw();
+                    return;
+                }
+                
+                const delta = now - lastFrameTimestamp;
+                if (delta >= frameIntervalMs) {
+                    lastFrameTimestamp = now;
+                    updateAndDraw();
+                }
+            }
+
+            requestAnimationFrame(animationLoop);
         })();
     </script>
 </body>
